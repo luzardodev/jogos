@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Missionários e Canibais - Completo</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚣</text></svg>">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #2c3e50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 10px;
+            color: white;
+        }
+
+        h1 { margin-top: 0; margin-bottom: 10px; text-align: center; }
+
+        .instructions {
+            background: linear-gradient(to bottom, #ff9a9e, #fbc2eb);
+            color: #333;
+            padding: 15px 20px;
+            border-radius: 15px;
+            text-align: center;
+            width: 100%;
+            max-width: 800px;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            font-size: 15px;
+        }
+
+        /* Layout Flexível para telas menores */
+        .main-layout {
+            display: flex;
+            flex-wrap: wrap; /* Permite empilhar em celulares */
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        /* Wrapper Responsivo do Jogo */
+        #board-wrapper {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        #game-board {
+            position: relative;
+            width: 800px;
+            height: 380px;
+            background: linear-gradient(to bottom, #87CEEB, #e0f7fa);
+            border: 5px solid #ecf0f1;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+            transform-origin: top left; /* Ponto de origem do zoom */
+        }
+
+        #river { position: absolute; bottom: 0; left: 200px; width: 400px; height: 120px; background-color: #3498db; }
+        .bank { position: absolute; bottom: 0; width: 200px; height: 120px; background-color: #556B2F; }
+        #left-bank { left: 0; }
+        #right-bank { right: 0; }
+
+        #boat {
+            position: absolute;
+            bottom: 70px;
+            width: 140px;
+            height: 50px;
+            background-color: #d35400;
+            border-radius: 0 0 60px 60px;
+            border: 3px solid #a04000;
+            transition: left 1s ease-in-out; 
+            z-index: 5;
+        }
+
+        .character {
+            position: absolute;
+            width: 40px;
+            height: 80px;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 1s ease-in-out; 
+        }
+        .character:hover { transform: scale(1.1) translateY(-5px); }
+
+        /* Painel de Registro */
+        #log-panel {
+            width: 100%;
+            max-width: 250px;
+            height: 380px;
+            background-color: #ecf0f1;
+            color: #333;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+        }
+
+        /* Em telas menores que 850px, o painel expande e a altura diminui */
+        @media (max-width: 850px) {
+            #log-panel { max-width: 100%; height: 200px; }
+        }
+
+        #log-panel h3 { text-align: center; background-color: #34495e; color: white; margin: 0; padding: 10px; border-radius: 10px 10px 0 0; font-size: 16px; }
+        #log-list { list-style: none; padding: 10px; margin: 0; overflow-y: auto; flex-grow: 1; }
+        #log-list li { background: #fff; margin-bottom: 8px; padding: 8px; border-radius: 5px; font-size: 14px; border-left: 4px solid #3498db; }
+
+        .controls { margin-top: 20px; display: flex; justify-content: center; width: 100%; }
+        
+        #btnMove {
+            padding: 12px 30px; font-size: 18px; font-weight: bold; cursor: pointer; border: none; border-radius: 8px; transition: 0.2s; color: #333; background-color: #f1c40f; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        #btnMove:hover:not(:disabled) { background-color: #f39c12; }
+        #btnMove:disabled { background-color: #7f8c8d; cursor: not-allowed; }
+
+        #modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 100; display: none; justify-content: center; align-items: center;
+        }
+        #modal-box { background-color: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 90%; box-sizing: border-box; }
+        #modal-title { margin-top: 0; font-size: 24px; }
+        #modal-desc { color: #333; font-size: 16px; margin-bottom: 20px; }
+        #btnRestart { padding: 10px 20px; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; background-color: #2ecc71; color: white; transition: 0.2s; }
+        #btnRestart:hover { background-color: #27ae60; }
+    </style>
+</head>
+<body>
+
+    <h1>Missionários e Canibais</h1>
+    <div class="instructions">
+        Clique nos personagens para embarcar! O barco leva no máximo 2 pessoas. 
+        <strong>Atenção:</strong> Se os canibais (👹) estiverem em maioria, eles comem os missionários (👨‍💼)!
+    </div>
+
+    <div class="main-layout">
+        <div id="board-wrapper">
+            <div id="game-board">
+                <div id="river"></div>
+                <div id="left-bank" class="bank"></div>
+                <div id="right-bank" class="bank"></div>
+                <div id="boat"></div>
+
+                <div id="modal-overlay">
+                    <div id="modal-box">
+                        <h2 id="modal-title"></h2>
+                        <p id="modal-desc"></p>
+                        <button id="btnRestart" onclick="resetGame()">🔄 Reiniciar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="log-panel">
+            <h3>Registro de Viagens</h3>
+            <ul id="log-list"></ul>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="btnMove" onclick="moveBoat()">🚣 Remar o Barco</button>
+    </div>
+
+    <script>
+        const svgMissionary = `<svg width="40" height="80" viewBox="0 0 40 80"><rect x="12" y="60" width="6" height="20" fill="#e6a15c"/><rect x="22" y="60" width="6" height="20" fill="#e6a15c"/><path d="M5,60 L35,60 L28,20 Q20,15 12,20 Z" fill="#b85c00"/><rect x="8" y="30" width="24" height="6" fill="#f1c27d"/><rect x="15" y="25" width="10" height="15" fill="white"/><circle cx="20" cy="15" r="10" fill="#f1c27d"/><path d="M10,10 Q20,0 30,10 Z" fill="#5c2e00"/></svg>`;
+        const svgCannibal = `<svg width="40" height="80" viewBox="0 0 40 80"><rect x="12" y="60" width="5" height="20" fill="#8b5a2b"/><rect x="23" y="60" width="5" height="20" fill="#8b5a2b"/><path d="M12,20 Q20,15 28,20 L26,50 L14,50 Z" fill="#8b5a2b"/><path d="M10,45 L30,45 L35,60 L5,60 Z" fill="#556b2f"/><circle cx="20" cy="15" r="10" fill="#8b5a2b"/><line x1="30" y1="20" x2="35" y2="70" stroke="black" stroke-width="2"/><rect x="10" y="30" width="25" height="4" fill="#8b5a2b"/><line x1="20" y1="5" x2="20" y2="-5" stroke="black" stroke-width="2"/><line x1="12" y1="8" x2="5" y2="0" stroke="black" stroke-width="2"/><line x1="28" y1="8" x2="35" y2="0" stroke="black" stroke-width="2"/></svg>`;
+
+        let boatPos = 'left'; 
+        let isMoving = false;
+        let gameOver = false;
+        let tripCount = 0;
+
+        const slots = {
+            leftBank: [{x:10,y:200,char:null},{x:40,y:200,char:null},{x:70,y:200,char:null},{x:100,y:200,char:null},{x:130,y:200,char:null},{x:160,y:200,char:null}],
+            rightBank: [{x:610,y:200,char:null},{x:640,y:200,char:null},{x:670,y:200,char:null},{x:700,y:200,char:null},{x:730,y:200,char:null},{x:760,y:200,char:null}],
+            boatLeft: [{x:220,y:200,char:null},{x:280,y:200,char:null}],
+            boatRight: [{x:420,y:200,char:null},{x:480,y:200,char:null}]
+        };
+
+        let characters = [];
+
+        // Função para escalar o jogo em telas menores
+        function adjustScale() {
+            const wrapper = document.getElementById('board-wrapper');
+            const board = document.getElementById('game-board');
+            const scale = Math.min(1, wrapper.clientWidth / 800);
+            board.style.transform = `scale(${scale})`;
+            wrapper.style.height = (380 * scale) + 'px';
+        }
+
+        window.addEventListener('resize', adjustScale);
+
+        function resetGame() {
+            const board = document.getElementById('game-board');
+            document.querySelectorAll('.character').forEach(el => el.remove());
+            
+            boatPos = 'left';
+            isMoving = false;
+            gameOver = false;
+            tripCount = 0;
+            
+            document.getElementById('modal-overlay').style.display = 'none';
+            document.getElementById('log-list').innerHTML = '';
+            document.getElementById('btnMove').disabled = false;
+
+            for(let key in slots) slots[key].forEach(s => s.char = null);
+
+            characters = [
+                { id: 'm1', type: 'M', svg: svgMissionary, loc: 'leftBank', slotIndex: 0 },
+                { id: 'm2', type: 'M', svg: svgMissionary, loc: 'leftBank', slotIndex: 1 },
+                { id: 'm3', type: 'M', svg: svgMissionary, loc: 'leftBank', slotIndex: 2 },
+                { id: 'c1', type: 'C', svg: svgCannibal, loc: 'leftBank', slotIndex: 3 },
+                { id: 'c2', type: 'C', svg: svgCannibal, loc: 'leftBank', slotIndex: 4 },
+                { id: 'c3', type: 'C', svg: svgCannibal, loc: 'leftBank', slotIndex: 5 }
+            ];
+
+            characters.forEach(c => {
+                const el = document.createElement('div');
+                el.className = 'character';
+                el.id = c.id;
+                el.innerHTML = c.svg;
+                el.onclick = () => moveCharacter(c);
+                board.appendChild(el);
+                slots.leftBank[c.slotIndex].char = c;
+            });
+
+            updateAnimations();
+            adjustScale(); // Ajusta escala no início
+        }
+
+        function updateAnimations() {
+            document.getElementById('boat').style.left = boatPos === 'left' ? '210px' : '410px';
+            characters.forEach(c => {
+                const el = document.getElementById(c.id);
+                let currentSlotList = c.loc === 'boat' ? (boatPos === 'left' ? slots.boatLeft : slots.boatRight) : slots[c.loc];
+                const position = currentSlotList[c.slotIndex];
+                el.style.left = position.x + 'px';
+                el.style.top = position.y + 'px';
+            });
+        }
+
+        function moveCharacter(c) {
+            if (isMoving || gameOver) return;
+            if (c.loc === 'leftBank' || c.loc === 'rightBank') {
+                if ((c.loc === 'leftBank' && boatPos !== 'left') || (c.loc === 'rightBank' && boatPos !== 'right')) return;
+                const emptySlot = slots.boatLeft.findIndex(s => s.char === null);
+                if (emptySlot !== -1) {
+                    slots[c.loc][c.slotIndex].char = null; 
+                    c.loc = 'boat'; c.slotIndex = emptySlot;
+                    slots.boatLeft[emptySlot].char = c; slots.boatRight[emptySlot].char = c; 
+                }
+            } 
+            else if (c.loc === 'boat') {
+                const currentBank = boatPos === 'left' ? 'leftBank' : 'rightBank';
+                const emptySlot = slots[currentBank].findIndex(s => s.char === null);
+                if (emptySlot !== -1) {
+                    slots.boatLeft[c.slotIndex].char = null; slots.boatRight[c.slotIndex].char = null;
+                    c.loc = currentBank; c.slotIndex = emptySlot;
+                    slots[currentBank][emptySlot].char = c; 
+                }
+            }
+            updateAnimations(); 
+        }
+
+        function moveBoat() {
+            if (isMoving || gameOver) return;
+            const passengers = characters.filter(c => c.loc === 'boat');
+            if (passengers.length === 0) return alert("O barco precisa de pelo menos uma pessoa para remar!");
+
+            isMoving = true;
+            document.getElementById('btnMove').disabled = true;
+            registerTrip(passengers);
+            boatPos = boatPos === 'left' ? 'right' : 'left';
+            updateAnimations(); 
+
+            setTimeout(() => { isMoving = false; checkRules(); }, 1000);
+        }
+
+        function registerTrip(passengers) {
+            tripCount++;
+            let mCount = passengers.filter(c => c.type === 'M').length;
+            let cCount = passengers.filter(c => c.type === 'C').length;
+            let description = [];
+            if (mCount > 0) description.push(`${mCount}👨‍💼`);
+            if (cCount > 0) description.push(`${cCount}👹`);
+            let directionText = boatPos === 'left' ? '➡️ P/ Direita' : '⬅️ P/ Esquerda';
+            
+            const logItem = document.createElement('li');
+            logItem.innerHTML = `<strong>V${tripCount}:</strong> ${description.join(' e ')} <br>${directionText}`;
+            const logList = document.getElementById('log-list');
+            logList.appendChild(logItem);
+            logList.scrollTop = logList.scrollHeight;
+        }
+
+        function showModal(title, desc, color) {
+            gameOver = true;
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-title').style.color = color;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function checkRules() {
+            let leftM = 0, leftC = 0, rightM = 0, rightC = 0;
+            characters.forEach(c => {
+                let location = c.loc === 'boat' ? (boatPos === 'left' ? 'leftBank' : 'rightBank') : c.loc;
+                if (location === 'leftBank') { c.type === 'M' ? leftM++ : leftC++; } 
+                else { c.type === 'M' ? rightM++ : rightC++; }
+            });
+
+            if ((leftM > 0 && leftC > leftM) || (rightM > 0 && rightC > rightM)) {
+                showModal("GAME OVER!", "Os canibais devoraram os missionários! ☠️", "#e74c3c");
+            } else if (rightM === 3 && rightC === 3) {
+                showModal("VOCÊ VENCEU! 🎉", "Todos atravessaram em segurança!", "#2ecc71");
+            } else {
+                document.getElementById('btnMove').disabled = false;
+            }
+        }
+
+        window.onload = resetGame;
+    </script>
+</body>
+</html>
